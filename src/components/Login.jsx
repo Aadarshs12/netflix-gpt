@@ -1,14 +1,58 @@
 import React from "react";
 import Header from "./Header";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import Validate from "../utils/Validate";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "../utils/Firebase";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [isSignInForm, setSignInForm] = useState(true);
+  const [errorMessage, setErrrorMessage] = useState(null);
+  const name = useRef(null);
+  const email = useRef(null);
+  const password = useRef(null);
+  const handleSubmitButton = () => {
+    console.log(email.current.value);
+    console.log(password.current.value);
+    const message = Validate(email.current.value, password.current.value);
+    setErrrorMessage(message);
+    if(message)return;
+    if (!isSignInForm) {
+      createUserWithEmailAndPassword(auth, email.current.value, password.current.value)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          console.log(user);
+          navigate("/browse");
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrrorMessage(errorCode+"-"+errorMessage);
+        });
+    } else {
+      signInWithEmailAndPassword(auth, email.current.value, password.current.value)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          console.log(user);
+          navigate("/browse");
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrrorMessage(errorCode+"-"+errorMessage);
+        });
+    }
+  };
   const toggleSignInForm = () => {
     setSignInForm(!isSignInForm);
   };
   return (
-    <div>
+    <div className="bg-black h-screen  w-full ">
       <Header />
       <div className="">
         <img
@@ -16,28 +60,39 @@ const Login = () => {
           alt="bg-img"
         />
         <form
+          onSubmit={(e) => e.preventDefault()}
           action=""
-          className="absolute sm:w-4/12 md:w-3/12 right-0 top-2 left-0 my-36 p-12 bg-black mx-auto text-white bg-opacity-80 rounded-lg"
+          className="absolute w-full sm:w-1/2 md:w-1/2 lg:w-3/12 right-0 top-2 left-0 my-36 p-12 bg-black mx-auto text-white bg-opacity-80 rounded-lg"
         >
           <h1 className="font-bold text-3xl my-4">
             {isSignInForm ? "Sign In" : "Sign Up"}
           </h1>
-          {!isSignInForm && (<input
-            className="w-full p-3 my-4 bg-gray-700 bg-opacity-35 rounded-md"
-            type="password"
-            placeholder="Full Name"
-          />)}
+          {!isSignInForm && (
+            <input
+              ref={name}
+              className="w-full p-3 my-4 bg-gray-700 bg-opacity-35 rounded-md"
+              type="text"
+              placeholder="Full Name"
+            />
+          )}
+          
           <input
+            ref={email}
             className="w-full p-3 my-4 bg-gray-700 bg-opacity-35 rounded-md"
             type="text"
-            placeholder="Email or Phone number"
+            placeholder="Email or phone number"
           />
           <input
+            ref={password}
             className="w-full p-3 my-4 bg-gray-700 bg-opacity-35 rounded-md"
             type="password"
             placeholder="Password"
           />
-          <button className="w-full p-3 my-6  rounded-lg bg-red-700">
+          <p className="text-sm font-bold text-red-500">{errorMessage}</p>
+          <button
+            className="w-full p-3 my-6  rounded-lg bg-red-700"
+            onClick={handleSubmitButton}
+          >
             {isSignInForm ? "Sign In" : "Sign Up"}
           </button>
           <p
